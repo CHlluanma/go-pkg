@@ -1,0 +1,8 @@
+env: dev
+
+pkgconfig:
+  name: "test"
+  version: "1.0.0"
+  use:
+    - "github.com/spf13/viper"
+    - "log"
