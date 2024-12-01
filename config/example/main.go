@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"log"
 
 	"github.com/CHlluanma/go-pkg/config"
 )
@@ -22,6 +22,7 @@ func main() {
 	c := config.New(config.WithUnmarshalStruct(&conf)) // config.WithEnvFilePath("./config/dev"),
 
 	c.LoadConfig()
+	c.LoadDotEnv()
 
-	fmt.Printf("%v\n", c.GetEnv("title_dotenv"))
+	log.Printf("%v\n", c.GetDotEnv("title_dotenv"))
 }

@@ -22,7 +22,8 @@ const (
 )
 
 type Config struct {
-	v *viper.Viper
+	v       *viper.Viper
+	vdotenv *viper.Viper
 
 	ModeEnv         string   // 运行环境
 	EnvPrefix       string   // 环境变量前缀
@@ -112,6 +113,8 @@ func WithUnmarshalStruct(unmarshalStruct any) Option {
 func New(opts ...Option) *Config {
 	conf := &Config{
 		v:               viper.New(),
+		vdotenv:         nil,
+		ModeEnv:         "MODE_ENV",
 		Watcher:         false,
 		EnvPrefix:       "",
 		EnvFileName:     defaultEnvFileName,
@@ -149,6 +152,12 @@ func (c *Config) LoadConfig() {
 	}
 }
 
+// LoadDotEnv  从.env 文件加载环境变量
+func (c *Config) LoadDotEnv() {
+	c.vdotenv = viper.New()
+	c.readDotEnv()
+}
+
 // LoadEnvConfig 设置环境变量
 func (c *Config) loadEnvConfig() {
 	if c.EnvPrefix != "" {
@@ -163,15 +172,15 @@ func (c *Config) loadEnvConfig() {
 	c.v.SetEnvKeyReplacer(strings.NewReplacer("-", "_", ".", "_"))
 }
 
-func (c *Config) readEnvFile() {
+func (c *Config) readDotEnv() {
 	// c.v.SetFs(afero.NewMemMapFs())
 
-	c.v.SetConfigName(c.EnvFileName)
-	c.v.SetConfigType("env")
-	c.v.AddConfigPath(c.EnvFilePath)
+	c.vdotenv.SetConfigName(c.EnvFileName)
+	c.vdotenv.SetConfigType("env")
+	c.vdotenv.AddConfigPath(c.EnvFilePath)
 	// c.v.SetConfigFile(c.EnvFileName)
 
-	c.readInConfig()
+	c.readInConfig("dotenv")
 }
 
 func (c *Config) readConfigFile() {
@@ -180,11 +189,18 @@ func (c *Config) readConfigFile() {
 	configPath := filepath.Join(c.ConfigFilePath, c.getModeEnv())
 	c.v.AddConfigPath(configPath)
 
-	c.readInConfig()
+	c.readInConfig("config")
 }
 
-func (c *Config) readInConfig() {
-	if err := c.v.ReadInConfig(); err != nil {
+func (c *Config) readInConfig(vType string) {
+	var v *viper.Viper
+	if vType == "dotenv" {
+		v = c.vdotenv
+	} else {
+		v = c.v
+	}
+
+	if err := v.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
 			log.Panicf("config file not found; please check your config file. error: %v", err)
 		} else {
@@ -208,8 +224,15 @@ func (c *Config) GetEnv(key string) string {
 	return getkey
 }
 
+func (c *Config) GetDotEnv(key string) string {
+	if c.vdotenv == nil {
+		return ""
+	}
+	return c.vdotenv.GetString(key)
+}
+
 func (c *Config) getModeEnv() string {
-	env := c.v.GetString("ENV")
+	env := c.v.GetString(c.ModeEnv)
 	if len(env) == 0 {
 		return defaultModeEnv
 	}
