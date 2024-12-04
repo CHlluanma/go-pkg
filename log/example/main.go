@@ -3,7 +3,7 @@ package main
 import (
 	"log/slog"
 
-	"github.com/CHlluanma/go-pkg/log"
+	"github.com/chhz0/go-pkg/log"
 )
 
 type contextKey string
@@ -79,7 +79,7 @@ func main() {
 
 		user := &User{
 			ID:       123,
-			Name:     "chlluanma",
+			Name:     "chhz0",
 			Password: "pwd",
 		}
 		l.Info("get log level", "user", user)
