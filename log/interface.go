@@ -12,20 +12,20 @@ type InfoLogger interface {
 
 type Logger interface {
 	InfoLogger
-	Debug(ctx context.Context, msg string, args ...any)
-	Debugf(ctx context.Context, format string, args ...any)
-	Debugw(ctx context.Context, msg string, args ...any)
+	Debug(msg string, args ...any)
+	Debugf(format string, args ...any)
+	DebugContext(ctx context.Context, msg string, args ...any)
 
-	Trace(ctx context.Context, msg string, args ...any)
-	Tracef(ctx context.Context, format string, args ...any)
-	Tracew(ctx context.Context, msg string, args ...any)
+	Trace(msg string, args ...any)
+	Tracef(format string, args ...any)
+	TraceContext(ctx context.Context, msg string, args ...any)
 
-	Warn(ctx context.Context, msg string, args ...any)
-	Warnf(ctx context.Context, format string, args ...any)
+	Warn(msg string, args ...any)
+	Warnf(format string, args ...any)
 	Warnw(ctx context.Context, msg string, args ...any)
 
-	Error(ctx context.Context, msg string, args ...any)
-	Errorf(ctx context.Context, format string, args ...any)
+	Error(msg string, args ...any)
+	Errorf(format string, args ...any)
 	Errorw(ctx context.Context, msg string, args ...any)
 
 	// V 返回一个具有指定日志级别的信息记录器。

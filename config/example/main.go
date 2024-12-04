@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	"github.com/CHlluanma/go-pkg/config"
+	"github.com/chhz0/go-pkg/config"
 )
 
 type testConfig struct {
