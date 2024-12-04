@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"os"
 	"runtime"
 	"time"
 )
@@ -18,13 +17,13 @@ type noopInfoLogger struct{}
 func (n *noopInfoLogger) Enabled() bool { return false }
 
 // Info implements InfoLogger.
-func (n *noopInfoLogger) Info(ctx context.Context, msg string, args ...any) {}
+func (n *noopInfoLogger) Info(msg string, args ...any) {}
 
 // Infof implements InfoLogger.
-func (n *noopInfoLogger) Infof(ctx context.Context, format string, args ...any) {}
+func (n *noopInfoLogger) Infof(format string, args ...any) {}
 
 // Infow implements InfoLogger.
-func (n *noopInfoLogger) Infow(ctx context.Context, msg string, args ...any) {}
+func (n *noopInfoLogger) InfoContext(ctx context.Context, msg string, args ...any) {}
 
 var disableInfoLogger = &noopInfoLogger{}
 
@@ -55,27 +54,7 @@ func New(level slog.Level) *SlogLogger {
 	var lvl slog.LevelVar
 	lvl.Set(level)
 
-	sl := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-		AddSource: true,
-
-		Level: &lvl,
-
-		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
-			// 处理自定义的日志级别
-			if a.Key == slog.LevelKey {
-				level := a.Value.Any().(slog.Level)
-				levelLabel := level.String()
-
-				switch level {
-				case LevelTrace:
-					levelLabel = "TRACE"
-				}
-				a.Value = slog.StringValue(levelLabel)
-			}
-
-			return a
-		},
-	}))
+	sl := slog.New(defaultHandler(&lvl))
 	return &SlogLogger{l: sl, lvl: &lvl}
 }
 
@@ -127,6 +106,23 @@ func (l *SlogLogger) log(ctx context.Context, level slog.Level, msg string, args
 	_ = l.l.Handler().Handle(ctx, r)
 }
 
+func (l *SlogLogger) Log(ctx context.Context, level slog.Level, msg string, args ...any) {
+	l.log(ctx, level, msg, args...)
+}
+
+func (l *SlogLogger) Debug(msg string, args ...any) {
+	// l.l.Info(msg, args...)
+	l.Log(context.Background(), LevelDebug, msg, args...)
+}
+
+func (l *SlogLogger) Debugf(format string, args ...any) {
+	l.Log(context.Background(), LevelDebug, fmt.Sprintf(format, args...))
+}
+
+func (l *SlogLogger) DebugContext(ctx context.Context, msg string, args ...any) {
+	l.Log(ctx, LevelDebug, msg, args...)
+}
+
 func (l *SlogLogger) Info(msg string, args ...any) {
 	// l.l.Info(msg, args...)
 	l.Log(context.Background(), LevelInfo, msg, args...)
@@ -144,16 +140,48 @@ func (l *SlogLogger) Trace(msg string, args ...any) {
 	l.Log(context.Background(), LevelTrace, msg, args...)
 }
 
+func (l *SlogLogger) Tracef(format string, args ...any) {
+	l.Log(context.Background(), LevelTrace, fmt.Sprintf(format, args...))
+}
+
+func (l *SlogLogger) TraceContext(ctx context.Context, msg string, args ...any) {
+	l.Log(ctx, LevelTrace, msg, args...)
+}
+
 func (l *SlogLogger) Warn(msg string, args ...any) {
 	// l.l.Warn(msg, args...)
 	l.Log(context.Background(), LevelWarn, msg, args...)
+}
+
+func (l *SlogLogger) Warnf(format string, args ...any) {
+	// l.l.Warn(msg, args...)
+	l.Log(context.Background(), LevelWarn, fmt.Sprintf(format, args...))
+}
+
+func (l *SlogLogger) WarnContext(ctx context.Context, msg string, args ...any) {
+	// l.l.Warn(msg, args...)
+	l.Log(ctx, LevelWarn, msg, args...)
 }
 
 func (l *SlogLogger) Error(msg string, args ...any) {
 	// l.l.Error(msg, args...)
 	l.Log(context.Background(), LevelError, msg, args...)
 }
+func (l *SlogLogger) Errorf(format string, args ...any) {
+	// l.l.Error(msg, args...)
+	l.Log(context.Background(), LevelError, fmt.Sprintf(format, args...))
+}
+func (l *SlogLogger) ErrorContext(ctx context.Context, msg string, args ...any) {
+	// l.l.Error(msg, args...)
+	l.Log(ctx, LevelError, msg, args...)
+}
 
-func (l *SlogLogger) Log(ctx context.Context, level slog.Level, msg string, args ...any) {
-	l.log(ctx, level, msg, args...)
+func (l *SlogLogger) V(level Level) InfoLogger {
+	if l.l.Enabled(context.Background(), level) {
+		return &SlogLogger{
+			l:   l.l,
+			lvl: l.lvl,
+		}
+	}
+	return disableInfoLogger
 }
